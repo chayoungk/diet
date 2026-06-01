@@ -75,22 +75,17 @@ function saveGoals() {
   save(); alert('설정이 저장되었습니다');
 }
 
-// 💡 이번 달 데이터 삭제 기능 추가
 function clearCurrentMonthData() {
   const year = calendarDate.getFullYear();
   const monthStr = String(calendarDate.getMonth() + 1).padStart(2, '0');
   const targetMonth = `${year}-${monthStr}`;
-  
   if (!confirm(`${targetMonth}월의 모든 기록을 삭제하시겠습니까?`)) return;
   
   data.weights = data.weights.filter(w => !w.date.startsWith(targetMonth));
   data.meals = data.meals.filter(m => !m.date.startsWith(targetMonth));
   data.exercises = data.exercises.filter(e => !e.date.startsWith(targetMonth));
   data.fastingDates = data.fastingDates.filter(d => !d.startsWith(targetMonth));
-  
-  save();
-  alert('삭제되었습니다.');
-  location.reload(); 
+  save(); alert('삭제되었습니다.'); location.reload(); 
 }
 
 function clearData() { if (!confirm('정말 모든 데이터를 삭제하시겠습니까?')) return; localStorage.removeItem('dietAnalysis'); location.reload(); }
@@ -141,13 +136,13 @@ function renderCalendar() {
 
     let mealPreview = `<div class="calendar-meal-name empty-meal">+</div>`;
     if (dayMeals.length > 0) {
-      const firstMeal = dayMeals[0].name.length > 5 ? dayMeals[0].name.substring(0, 5) + '..' : dayMeals[0].name;
-      mealPreview = `<div class="calendar-meal-name">🍱 ${firstMeal}${dayMeals.length > 1 ? ` 외 ${dayMeals.length - 1}` : ''}</div><div class="calendar-day-cal ${isOverCal ? 'danger' : 'safe'}">${totalCal} kcal</div>`;
+      const firstMeal = dayMeals[0].name.length > 4 ? dayMeals[0].name.substring(0, 4) + '..' : dayMeals[0].name;
+      mealPreview = `<div class="calendar-meal-name">🍱 ${firstMeal}${dayMeals.length > 1 ? ` 외` : ''}</div><div class="calendar-day-cal ${isOverCal ? 'danger' : 'safe'}">${totalCal}</div>`;
     }
 
     html += `<div class="${classes}" onclick="selectDate('${dateStr}')">
-      ${isFastingDay ? `<div class="calendar-fasting-badge">🌙단식</div>` : ''}
-      ${hasExercise ? `<div class="calendar-exercise-badge">🏃‍♂️</div>` : ''}
+      ${isFastingDay ? `<div class="calendar-fasting-badge">🌙</div>` : ''}
+      ${hasExercise ? `<div class="calendar-exercise-badge">🏃</div>` : ''}
       <div class="calendar-day-number">${day}</div>
       ${mealPreview}
     </div>`;
@@ -186,11 +181,7 @@ function renderSelectedDate() {
       fat: sum.fat + m.fat, sugar: sum.sugar + (m.sugar || 0), sodium: sum.sodium + m.sodium
     }), { cal: 0, carb: 0, protein: 0, fat: 0, sugar: 0, sodium: 0 });
 
-    const nutrients = [
-      { name: '칼로리', current: total.cal, goal: data.goals.cal, unit: 'kcal' },
-      { name: '탄수화물', current: total.carb, goal: data.goals.carb, unit: 'g' },
-      { name: '단백질', current: total.protein, goal: data.goals.protein, unit: 'g' }
-    ];
+    const nutrients = [{ name: '칼로리', current: total.cal, goal: data.goals.cal, unit: 'kcal' }, { name: '탄수화물', current: total.carb, goal: data.goals.carb, unit: 'g' }, { name: '단백질', current: total.protein, goal: data.goals.protein, unit: 'g' }];
 
     document.getElementById('selectedDateSummary').innerHTML = `<div class="nutrient-grid">${nutrients.map(n => {
       const pct = Math.round((n.current / n.goal) * 100); const isOver = n.current > n.goal;
@@ -214,14 +205,13 @@ function renderSelectedDate() {
 
 function renderInsights() {
   const overages = getSelectedDateOverages();
-  let html = `<h2>💡 선택일 맞춤 코칭 (${selectedDate.slice(5)})</h2>`;
-  if (overages === null) html += `<div class="insight insight-normal"><div class="insight-icon">📝</div><div><div class="insight-title">식단을 기록해주세요</div><div class="insight-desc">데이터가 입력되면 분석이 시작됩니다.</div></div></div>`;
-  else if (overages.length > 0) html += `<div class="insight insight-warning"><div class="insight-icon">⚠️</div><div><div class="insight-title">영양소 초과 주의</div><div class="insight-desc">${overages.join(', ')} 섭취가 권장량을 초과했습니다. 다음 식사때 주의해주세요!</div></div></div>`;
-  else html += `<div class="insight insight-normal"><div class="insight-icon">✅</div><div><div class="insight-title">완벽합니다!</div><div class="insight-desc">모든 영양소가 목표치 이내로 아주 잘 관리되었습니다.</div></div></div>`;
+  let html = `<h2>💡 맞춤 코칭 (${selectedDate.slice(5)})</h2>`;
+  if (overages === null) html += `<div class="insight insight-normal"><div class="insight-icon">📝</div><div><div class="insight-title">식단을 기록해주세요</div></div></div>`;
+  else if (overages.length > 0) html += `<div class="insight insight-warning"><div class="insight-icon">⚠️</div><div><div class="insight-title">영양소 초과 주의</div><div class="insight-desc">${overages.join(', ')} 섭취 초과</div></div></div>`;
+  else html += `<div class="insight insight-normal"><div class="insight-icon">✅</div><div><div class="insight-title">완벽합니다!</div><div class="insight-desc">목표치 이내 유지 중</div></div></div>`;
   document.getElementById('insights').innerHTML = html;
 }
 
-// ===== 1. 체중 변동 & 일일 칼로리 상관관계 차트 =====
 function renderCalWeightChart(targetMonth) {
   const ctx = document.getElementById('calWeightChart'); if (!ctx) return;
   const [year, month] = targetMonth.split('-');
@@ -233,10 +223,8 @@ function renderCalWeightChart(targetMonth) {
     labels.push(`${day}일`);
     const dayMeals = data.meals.filter(m => m.date === dateStr);
     calData.push(dayMeals.reduce((sum, m) => sum + m.cal, 0));
-    
     const wRecord = data.weights.find(w => w.date === dateStr);
     weightData.push(wRecord ? wRecord.weight : null);
-
     exerciseFlags.push(data.exercises.some(e => e.date === dateStr));
     fastingFlags.push(data.fastingDates.includes(dateStr));
   }
@@ -244,41 +232,17 @@ function renderCalWeightChart(targetMonth) {
   if (charts.calWeight) charts.calWeight.destroy();
   charts.calWeight = new Chart(ctx, {
     type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: '체중 (kg)', data: weightData, type: 'line', yAxisID: 'yWeight', borderColor: '#7dff8f', backgroundColor: '#7dff8f', borderWidth: 3, pointRadius: 4, spanGaps: true, tension: 0.2 },
-        { label: '칼로리 (kcal)', data: calData, yAxisID: 'yCal', backgroundColor: calData.map(c => c > data.goals.cal ? 'rgba(255, 107, 107, 0.7)' : 'rgba(100, 181, 246, 0.5)'), borderRadius: 4 }
-      ]
-    },
-    options: {
-      layout: { padding: { bottom: 25 } }, 
-      responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: { color: '#9ba89d' } } },
-      scales: {
-        x: { ticks: { color: '#6b7870', font: {size: 10} }, grid: { display: false } },
-        yCal: { type: 'linear', position: 'left', ticks: { color: '#6b7870' }, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: '칼로리 (kcal)', color: '#6b7870', font: {size: 11} } },
-        yWeight: { type: 'linear', position: 'right', ticks: { color: '#7dff8f' }, grid: { display: false }, title: { display: true, text: '체중 (kg)', color: '#7dff8f', font: {size: 11} } }
-      }
-    },
+    data: { labels, datasets: [{ label: '체중 (kg)', data: weightData, type: 'line', yAxisID: 'yWeight', borderColor: '#7dff8f', backgroundColor: '#7dff8f', borderWidth: 2, pointRadius: 2, spanGaps: true, tension: 0.2 }, { label: '칼로리', data: calData, yAxisID: 'yCal', backgroundColor: calData.map(c => c > data.goals.cal ? 'rgba(255, 107, 107, 0.7)' : 'rgba(100, 181, 246, 0.5)'), borderRadius: 2 }] },
+    options: { layout: { padding: { bottom: 25 } }, responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: { color: '#9ba89d', font: {size: 10} } } }, scales: { x: { ticks: { color: '#6b7870', font: {size: 9} }, grid: { display: false } }, yCal: { type: 'linear', position: 'left', ticks: { color: '#6b7870', font: {size: 9} }, grid: { color: 'rgba(255,255,255,0.05)' } }, yWeight: { type: 'linear', position: 'right', ticks: { color: '#7dff8f', font: {size: 9} }, grid: { display: false } } } },
     plugins: [{
       id: 'markerPlugin',
       afterDraw: (chart) => {
-        const ctx = chart.ctx;
-        ctx.font = '13px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top'; 
-        
+        const ctx = chart.ctx; ctx.font = '12px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; 
         for (let i = 0; i < labels.length; i++) {
-          const hasExercise = exerciseFlags[i];
-          const hasFasting = fastingFlags[i];
-          
-          if (hasExercise || hasFasting) {
+          if (exerciseFlags[i] || fastingFlags[i]) {
             const targetX = chart.scales.x.getPixelForTick(i);
-            const targetY = chart.scales.x.bottom + 4; 
-
-            let text = '';
-            if (hasFasting) text += '🌙';
-            if (hasExercise) text += '🏃‍♂️';
+            const targetY = chart.scales.x.bottom + 2; 
+            let text = ''; if (fastingFlags[i]) text += '🌙'; if (exerciseFlags[i]) text += '🏃';
             ctx.fillText(text, targetX, targetY);
           }
         }
@@ -287,13 +251,11 @@ function renderCalWeightChart(targetMonth) {
   });
 }
 
-// ===== 2. 💡 수정됨: 체중 변동 & 영양소 상관관계 차트 (아이콘 X축 하단 배치) =====
 function renderNutrientWeightChart(targetMonth) {
   const ctx = document.getElementById('nutrientWeightChart'); if (!ctx) return;
   const [year, month] = targetMonth.split('-');
   const daysInMonth = new Date(year, month, 0).getDate();
-  const labels = []; const carbData = []; const proteinData = []; const sugarData = []; const weightData = [];
-  const exerciseFlags = []; const fastingFlags = []; 
+  const labels = []; const carbData = []; const proteinData = []; const sugarData = []; const weightData = []; const exerciseFlags = []; const fastingFlags = []; 
 
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${targetMonth}-${String(day).padStart(2, '0')}`;
@@ -304,7 +266,6 @@ function renderNutrientWeightChart(targetMonth) {
     sugarData.push(dayMeals.reduce((sum, m) => sum + (m.sugar||0), 0));
     const wRecord = data.weights.find(w => w.date === dateStr);
     weightData.push(wRecord ? wRecord.weight : null);
-
     exerciseFlags.push(data.exercises.some(e => e.date === dateStr));
     fastingFlags.push(data.fastingDates.includes(dateStr));
   }
@@ -312,43 +273,17 @@ function renderNutrientWeightChart(targetMonth) {
   if (charts.nutrientWeight) charts.nutrientWeight.destroy();
   charts.nutrientWeight = new Chart(ctx, {
     type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: '체중 (kg)', data: weightData, yAxisID: 'yWeight', borderColor: '#7dff8f', backgroundColor: '#7dff8f', borderWidth: 3, pointRadius: 4, spanGaps: true, tension: 0.2 },
-        { label: '탄수화물(g)', data: carbData, yAxisID: 'yNutri', borderColor: '#64b5f6', backgroundColor: 'rgba(100, 181, 246, 0.1)', borderWidth: 2, fill: true, spanGaps: true, pointRadius: 2 },
-        { label: '단백질(g)', data: proteinData, yAxisID: 'yNutri', borderColor: '#c084fc', backgroundColor: 'rgba(192, 132, 252, 0.1)', borderWidth: 2, fill: true, spanGaps: true, pointRadius: 2 },
-        { label: '당(g)', data: sugarData, yAxisID: 'yNutri', borderColor: '#ffb547', backgroundColor: 'rgba(255, 181, 71, 0.1)', borderWidth: 2, fill: true, spanGaps: true, pointRadius: 2 }
-      ]
-    },
-    options: {
-      layout: { padding: { bottom: 25 } },
-      responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: { color: '#9ba89d' } } },
-      scales: {
-        x: { ticks: { color: '#6b7870', font: {size: 10} }, grid: { display: false } },
-        yNutri: { type: 'linear', position: 'left', ticks: { color: '#6b7870', callback: v => v + 'g' }, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: '영양소 (g)', color: '#6b7870', font: {size: 11} } },
-        yWeight: { type: 'linear', position: 'right', ticks: { color: '#7dff8f' }, grid: { display: false }, title: { display: true, text: '체중 (kg)', color: '#7dff8f', font: {size: 11} } }
-      }
-    },
+    data: { labels, datasets: [{ label: '체중', data: weightData, yAxisID: 'yWeight', borderColor: '#7dff8f', backgroundColor: '#7dff8f', borderWidth: 2, pointRadius: 2, spanGaps: true, tension: 0.2 }, { label: '탄수화물', data: carbData, yAxisID: 'yNutri', borderColor: '#64b5f6', backgroundColor: 'rgba(100, 181, 246, 0.1)', borderWidth: 1, fill: true, spanGaps: true, pointRadius: 1 }, { label: '단백질', data: proteinData, yAxisID: 'yNutri', borderColor: '#c084fc', backgroundColor: 'rgba(192, 132, 252, 0.1)', borderWidth: 1, fill: true, spanGaps: true, pointRadius: 1 }] },
+    options: { layout: { padding: { bottom: 25 } }, responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, labels: { color: '#9ba89d', font:{size:10} } } }, scales: { x: { ticks: { color: '#6b7870', font: {size: 9} }, grid: { display: false } }, yNutri: { type: 'linear', position: 'left', ticks: { color: '#6b7870', font:{size:9} }, grid: { color: 'rgba(255,255,255,0.05)' } }, yWeight: { type: 'linear', position: 'right', ticks: { color: '#7dff8f', font:{size:9} }, grid: { display: false } } } },
     plugins: [{
       id: 'markerPlugin',
       afterDraw: (chart) => {
-        const ctx = chart.ctx;
-        ctx.font = '13px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top'; 
-        
+        const ctx = chart.ctx; ctx.font = '12px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; 
         for (let i = 0; i < labels.length; i++) {
-          const hasExercise = exerciseFlags[i];
-          const hasFasting = fastingFlags[i];
-          
-          if (hasExercise || hasFasting) {
+          if (exerciseFlags[i] || fastingFlags[i]) {
             const targetX = chart.scales.x.getPixelForTick(i);
-            const targetY = chart.scales.x.bottom + 4; 
-
-            let text = '';
-            if (hasFasting) text += '🌙';
-            if (hasExercise) text += '🏃‍♂️';
+            const targetY = chart.scales.x.bottom + 2; 
+            let text = ''; if (fastingFlags[i]) text += '🌙'; if (exerciseFlags[i]) text += '🏃';
             ctx.fillText(text, targetX, targetY);
           }
         }
@@ -360,8 +295,7 @@ function renderNutrientWeightChart(targetMonth) {
 function renderMonthCharts() {
   const now = new Date();
   const targetMonth = selectedMonth || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  renderCalWeightChart(targetMonth);
-  renderNutrientWeightChart(targetMonth);
+  renderCalWeightChart(targetMonth); renderNutrientWeightChart(targetMonth);
 }
 
 function populateMonthSelector() {
@@ -386,30 +320,19 @@ function renderMonthStats() {
   const monthLabel = !selectedMonth ? '이번 달' : formatMonth(targetMonth);
 
   if (monthMeals.length === 0 && monthWeights.length === 0 && monthExercises.length === 0) { 
-    document.getElementById('monthStats').innerHTML = `<div class="empty">${monthLabel} 데이터 없음</div>`; 
-    return; 
+    document.getElementById('monthStats').innerHTML = `<div class="empty">${monthLabel} 데이터 없음</div>`; return; 
   }
   
   let html = '<div class="stats-grid">';
   const uniqueDays = new Set(monthMeals.map(m => m.date)).size;
-  html += `<div class="stat-box"><div class="stat-label">식사 기록 일수</div><div class="stat-value">${uniqueDays}일</div></div>`;
-  
-  if (monthMeals.length > 0 && uniqueDays > 0) {
-    html += `<div class="stat-box"><div class="stat-label">일평균 칼로리</div><div class="stat-value">${Math.round(monthMeals.reduce((sum, m) => sum + m.cal, 0) / uniqueDays)}kcal</div></div>`;
-  }
-
-  if (monthExercises.length > 0) {
-    const totalDuration = monthExercises.reduce((sum, e) => sum + e.duration, 0);
-    html += `<div class="stat-box"><div class="stat-label">총 운동 횟수</div><div class="stat-value" style="color:#64b5f6">${monthExercises.length}회</div></div>`;
-    html += `<div class="stat-box"><div class="stat-label">총 운동 시간</div><div class="stat-value" style="color:#64b5f6">${totalDuration}분</div></div>`;
-  }
-
+  html += `<div class="stat-box"><div class="stat-label">기록 일수</div><div class="stat-value">${uniqueDays}일</div></div>`;
+  if (monthMeals.length > 0 && uniqueDays > 0) html += `<div class="stat-box"><div class="stat-label">평균 칼로리</div><div class="stat-value">${Math.round(monthMeals.reduce((sum, m) => sum + m.cal, 0) / uniqueDays)}</div></div>`;
+  if (monthExercises.length > 0) html += `<div class="stat-box"><div class="stat-label">운동</div><div class="stat-value" style="color:#64b5f6">${monthExercises.length}회</div></div>`;
   if (monthWeights.length >= 2) {
     const sorted = [...monthWeights].sort((a, b) => a.date.localeCompare(b.date));
     const change = Math.round((sorted[sorted.length - 1].weight - sorted[0].weight) * 10) / 10;
-    html += `<div class="stat-box"><div class="stat-label">${monthLabel} 체중 변화</div><div class="stat-value" style="color:${change > 0 ? '#ff6b6b' : '#7dff8f'}">${change > 0 ? '+' : ''}${change}kg</div></div>`;
+    html += `<div class="stat-box"><div class="stat-label">체중 변화</div><div class="stat-value" style="color:${change > 0 ? '#ff6b6b' : '#7dff8f'}">${change > 0 ? '+' : ''}${change}kg</div></div>`;
   }
-  
   html += '</div>';
   document.getElementById('monthStats').innerHTML = html;
 }
@@ -423,12 +346,10 @@ function analyzeFoodImpact() {
     const weightChange = sorted[i].weight - sorted[i - 1].weight;
     const prevMeals = data.meals.filter(m => m.date === prevDate);
     prevMeals.forEach(meal => {
-      if (!foodImpact[meal.name]) foodImpact[meal.name] = { totalChange: 0, count: 0, totalCal: 0, totalCarb: 0, totalSodium: 0 };
+      if (!foodImpact[meal.name]) foodImpact[meal.name] = { totalChange: 0, count: 0, totalCal: 0 };
       foodImpact[meal.name].totalChange += weightChange;
       foodImpact[meal.name].count += 1;
       foodImpact[meal.name].totalCal += meal.cal;
-      foodImpact[meal.name].totalCarb += meal.carb;
-      foodImpact[meal.name].totalSodium += meal.sodium;
     });
   }
   return Object.keys(foodImpact).map(name => {
@@ -443,7 +364,7 @@ function renderFoodImpact() {
   document.getElementById('foodImpact').innerHTML = '<div class="food-impact-list">' + impacts.slice(0, 10).map((food, i) => `
     <div class="food-impact-item ${food.avgChange > 0.2 ? 'bad' : food.avgChange < -0.1 ? 'good' : ''}">
       <div class="rank">${i + 1}</div>
-      <div class="food-info"><div class="food-name">${food.name}</div><div class="food-detail">평균 ${food.avgCal}kcal · ${food.count}회 섭취</div></div>
+      <div class="food-info"><div class="food-name">${food.name}</div><div class="food-detail">평균 ${food.avgCal}kcal · ${food.count}회</div></div>
       <div class="impact-value ${food.avgChange > 0 ? 'negative' : 'positive'}">${food.avgChange > 0 ? '+' : ''}${food.avgChange}kg</div>
     </div>`).join('') + '</div>';
 }
@@ -468,7 +389,7 @@ function renderRiskyCombos() {
     }
   }
   dayImpact.sort((a, b) => b.weightChange - a.weightChange);
-  document.getElementById('riskyCombos').innerHTML = dayImpact.length === 0 ? '<div class="empty">고위험 조합이 감지되지 않았습니다</div>' : dayImpact.slice(0, 5).map(item => `
+  document.getElementById('riskyCombos').innerHTML = dayImpact.length === 0 ? '<div class="empty">조합 데이터 부족</div>' : dayImpact.slice(0, 5).map(item => `
     <div class="list-item" style="flex-direction:column;align-items:flex-start">
       <div style="display:flex;justify-content:space-between;width:100%;margin-bottom:6px"><strong style="color:#ff6b6b">${item.foods}</strong><span style="color:#ff6b6b;font-weight:700">+${item.weightChange.toFixed(1)}kg</span></div>
       <div style="font-size:12px;color:#6b7870">총 ${item.totalCal}kcal</div>
@@ -480,7 +401,7 @@ function render() {
   const latestWeight = data.weights[0];
   if (latestWeight) {
     const toGo = Math.round((latestWeight.weight - data.goals.weight) * 10) / 10;
-    document.getElementById('headerStatus').textContent = `현재 ${latestWeight.weight}kg · 목표까지 ${Math.abs(toGo)}kg ${toGo > 0 ? '남음' : '달성!'}`;
+    document.getElementById('headerStatus').textContent = `현재 ${latestWeight.weight}kg · 목표까지 ${Math.abs(toGo)}kg`;
   } else document.getElementById('headerStatus').textContent = '다이어트를 시작해보세요!';
   
   renderMonthStats(); renderFoodImpact();
@@ -496,14 +417,8 @@ function switchTab(tabName, element) {
   document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
   document.getElementById(`tab-${tabName}`).classList.add('active');
 
-  // 💡 메인 탭 클릭 시 캘린더 강제 리렌더링
-  if (tabName === 'main') {
-    renderCalendar(); renderSelectedDate(); renderInsights();
-  }
-  if (tabName === 'stats') {
-    populateMonthSelector();
-    setTimeout(() => { renderMonthStats(); renderMonthCharts(); }, 100);
-  }
+  if (tabName === 'main') { renderCalendar(); renderSelectedDate(); renderInsights(); }
+  if (tabName === 'stats') { populateMonthSelector(); setTimeout(() => { renderMonthStats(); renderMonthCharts(); }, 100); }
   if (tabName === 'analysis') { renderFrequentFoods(); renderRiskyCombos(); }
 }
 

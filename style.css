@@ -1,12 +1,37 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d0f0e; color: #e8ede9; line-height: 1.6; padding: 20px; }
-.container { max-width: 1100px; margin: 0 auto; }
-header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #1a1d1b; }
-h1 { font-size: 32px; margin-bottom: 8px; }
-.subtitle { color: #9ba89d; font-size: 14px; }
+
+/* 💡 화면 흔들림 방지 및 더블탭 줌 차단 */
+html, body { 
+  font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif; 
+  background: #0d0f0e; color: #e8ede9; line-height: 1.5;
+  width: 100%; max-width: 100vw; overflow-x: hidden;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* 💡 아이폰 줌인 방지의 핵심! 입력칸 폰트 무조건 16px */
+input, select, textarea, button {
+  font-size: 16px !important;
+  appearance: none; 
+}
+
+.container { width: 100%; max-width: 1100px; margin: 0 auto; padding: 10px; overflow-x: hidden; }
+header { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #1a1d1b; }
+h1 { font-size: 24px; margin-bottom: 8px; }
+.subtitle { color: #9ba89d; font-size: 13px; }
 h2 { font-size: 18px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
 h3 { font-size: 16px; margin-bottom: 12px; }
-.card { background: #131614; border: 1px solid #1a1d1b; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+
+/* 카드 및 레이아웃 */
+.card { background: #131614; border: 1px solid #1a1d1b; border-radius: 12px; padding: 20px; margin-bottom: 16px; width: 100%; overflow: hidden;}
+.main-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; width: 100%; }
+
+/* 모바일 화면 강제 1열 배치 */
+@media (max-width: 768px) {
+  .main-layout { display: flex; flex-direction: column; gap: 15px; width: 100%; }
+  .card { padding: 15px; }
+  .nutrient-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
 
 /* AI 인사이트 */
 .insight-card { background: linear-gradient(135deg, #131614 0%, #1a1d1b 100%); border: 1px solid #272b29; }
@@ -30,92 +55,75 @@ h3 { font-size: 16px; margin-bottom: 12px; }
 .nutrient-box.over .nutrient-fill { background: linear-gradient(90deg, #ff6b6b, #ff5252); }
 
 /* 통계 & 음식 분석 리스트 */
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-.stat-box { background: #1a1d1b; padding: 16px; border-radius: 8px; text-align: center; }
-.stat-label { font-size: 12px; color: #6b7870; margin-bottom: 8px; }
-.stat-value { font-size: 24px; font-weight: 700; color: #7dff8f; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+.stat-box { background: #1a1d1b; padding: 12px; border-radius: 8px; text-align: center; }
+.stat-label { font-size: 11px; color: #6b7870; margin-bottom: 6px; }
+.stat-value { font-size: 20px; font-weight: 700; color: #7dff8f; }
 .food-impact-list { margin-bottom: 16px; }
 .food-impact-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #1a1d1b; border-radius: 8px; margin-bottom: 8px; border: 1px solid #272b29; }
 .food-impact-item.bad { border-color: rgba(255, 107, 107, 0.3); background: rgba(255, 107, 107, 0.05); }
 .food-impact-item.good { border-color: rgba(125, 255, 143, 0.3); background: rgba(125, 255, 143, 0.05); }
-.rank { font-size: 14px; font-weight: 700; color: #6b7870; min-width: 24px; text-align: center; }
+.rank { font-size: 14px; font-weight: 700; color: #6b7870; min-width: 20px; text-align: center; }
 .food-info { flex: 1; }
 .food-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
 .food-detail { font-size: 11px; color: #6b7870; }
-.impact-value { font-size: 16px; font-weight: 700; min-width: 60px; text-align: right; }
+.impact-value { font-size: 15px; font-weight: 700; min-width: 60px; text-align: right; }
 .impact-value.negative { color: #ff6b6b; }
 .impact-value.positive { color: #7dff8f; }
 
 /* 폼 요소 및 버튼 */
-.input-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-.input { flex: 1; background: #1a1d1b; border: 1px solid #272b29; border-radius: 8px; padding: 10px 12px; color: #e8ede9; font-size: 14px; }
+.input-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; width: 100%; }
+.input { flex: 1; background: #1a1d1b; border: 1px solid #272b29; border-radius: 8px; padding: 10px; color: #e8ede9; width: 100%; }
 .input:focus { outline: none; border-color: #7dff8f; }
-.btn { background: #7dff8f; color: #0d0f0e; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-.btn:hover { background: #5ee870; transform: translateY(-1px); }
-.btn-danger { background: #ff6b6b; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
-.btn-small { background: none; border: none; color: #ff6b6b; font-size: 18px; cursor: pointer; padding: 0 8px; border-radius: 4px; }
-.btn-small:hover { background: rgba(255, 107, 107, 0.1); }
-.btn-icon { background: #1a1d1b; border: 1px solid #272b29; color: #9ba89d; padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
-.btn-icon:hover { border-color: #7dff8f; color: #7dff8f; }
+.btn { background: #7dff8f; color: #0d0f0e; border: none; border-radius: 8px; padding: 10px 16px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn-danger { background: #ff6b6b; color: white; border: none; border-radius: 8px; padding: 10px 16px; font-weight: 600; cursor: pointer; }
+.btn-small { background: none; border: none; color: #ff6b6b; font-size: 18px !important; cursor: pointer; padding: 0 8px; border-radius: 4px; }
+.btn-icon { background: #1a1d1b; border: 1px solid #272b29; color: #9ba89d; padding: 6px 12px; border-radius: 6px; font-size: 13px !important; cursor: pointer; }
 
 /* 단식 토글 버튼 전용 스타일 */
-.btn-fasting { background: transparent; border: 1px solid #c084fc; color: #c084fc; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.btn-fasting:hover { background: rgba(192, 132, 252, 0.1); }
+.btn-fasting { background: transparent; border: 1px solid #c084fc; color: #c084fc; padding: 6px 12px; border-radius: 6px; font-size: 13px !important; font-weight: 600; cursor: pointer;}
 .btn-fasting.active { background: rgba(192, 132, 252, 0.2); }
 
-/* 식사 타입 및 운동 태그 */
-.meal-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 6px; display: inline-block; vertical-align: middle;}
+/* 식사/운동 태그 */
+.meal-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 6px; display: inline-block; }
 .meal-tag-아침 { background: rgba(100, 181, 246, 0.2); color: #64b5f6; }
 .meal-tag-점심 { background: rgba(125, 255, 143, 0.2); color: #7dff8f; }
 .meal-tag-저녁 { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; }
 .meal-tag-간식 { background: rgba(255, 181, 71, 0.2); color: #ffb547; }
 .meal-tag-운동 { background: rgba(255, 255, 255, 0.1); color: #fff; }
-
 .weight-record-box { margin-top: 12px; padding: 12px; background: #1a1d1b; border-radius: 8px; border: 1px solid #272b29; }
 
 /* 리스트, 탭, 차트 */
-.list { max-height: 400px; overflow-y: auto; }
-.list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #1a1d1b; border-radius: 8px; margin-bottom: 8px; font-size: 14px; border: 1px solid transparent; }
-.list-item:hover { border-color: #272b29; }
+.list { max-height: 300px; overflow-y: auto; width: 100%; }
+.list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #1a1d1b; border-radius: 8px; margin-bottom: 8px; font-size: 14px; }
 .empty { text-align: center; color: #6b7870; padding: 30px; font-size: 14px; }
 label { font-size: 13px; color: #9ba89d; display: block; margin-bottom: 6px; }
-.tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 2px solid #1a1d1b; padding-bottom: 0; overflow-x: auto; }
-.tab { background: none; border: none; color: #6b7870; font-size: 15px; font-weight: 600; padding: 12px 20px; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap; }
-.tab:hover { color: #9ba89d; }
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #1a1d1b; padding-bottom: 0; overflow-x: auto; white-space: nowrap; }
+.tab { background: none; border: none; color: #6b7870; font-size: 15px !important; font-weight: 600; padding: 12px 16px; cursor: pointer; border-bottom: 3px solid transparent; }
 .tab.active { color: #7dff8f; border-bottom-color: #7dff8f; }
-.tab-content { display: none; }
+.tab-content { display: none; width: 100%; }
 .tab-content.active { display: block; }
-.chart-container { position: relative; height: 300px; margin-top: 16px; }
+.chart-container { position: relative; height: 280px; margin-top: 16px; width: 100%; }
 
-/* 달력 다이어리 */
-#calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-.calendar-header { text-align: center; font-size: 13px; color: #6b7870; font-weight: 600; padding: 8px 4px; }
+/* 달력 */
+#calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; width: 100%; }
+.calendar-header { text-align: center; font-size: 12px; color: #6b7870; font-weight: 600; padding: 6px 2px; }
 .calendar-day {
-  min-height: 85px; border: 1px solid #272b29; border-radius: 8px; padding: 6px; cursor: pointer;
-  transition: all 0.2s; background: #1a1d1b; display: flex; flex-direction: column; position: relative;
+  min-height: 75px; border: 1px solid #272b29; border-radius: 8px; padding: 4px; 
+  background: #1a1d1b; display: flex; flex-direction: column; position: relative; overflow: hidden;
 }
-.calendar-day:hover { border-color: #7dff8f; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
 .calendar-day.selected { background: rgba(125, 255, 143, 0.1); border-color: #7dff8f; }
 .calendar-day.today { border-color: #64b5f6; border-width: 2px; }
 .calendar-day.other-month { opacity: 0.3; }
-.calendar-day-number { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: #e8ede9; }
+.calendar-day-number { font-size: 12px; font-weight: 700; margin-bottom: 2px; color: #e8ede9; }
 
-/* 💡 단식 및 운동 뱃지 위치 */
-.calendar-fasting-badge { font-size: 10px; color: #c084fc; font-weight: bold; position: absolute; top: 6px; right: 6px; }
-.calendar-exercise-badge { font-size: 12px; position: absolute; top: 4px; left: 24px; } /* 날짜 바로 옆에 위치 */
-
-.calendar-meal-name { font-size: 11px; color: #9ba89d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; margin-bottom: 4px; }
-.empty-meal { color: #3b423e; text-align: center; font-size: 14px; margin-top: 10px; }
-.calendar-day-cal { font-size: 11px; font-weight: bold; margin-top: auto; }
+.calendar-fasting-badge { font-size: 9px; color: #c084fc; font-weight: bold; position: absolute; top: 4px; right: 4px; }
+.calendar-exercise-badge { font-size: 10px; position: absolute; top: 4px; left: 20px; }
+.calendar-meal-name { font-size: 10px; color: #9ba89d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; margin-bottom: 2px; }
+.empty-meal { color: #3b423e; text-align: center; font-size: 12px; margin-top: 5px; }
+.calendar-day-cal { font-size: 10px; font-weight: bold; margin-top: auto; }
 .calendar-day-cal.safe { color: #7dff8f; }
 .calendar-day-cal.danger { color: #ff6b6b; }
 
-@media (max-width: 768px) {
-  body { padding: 10px; }
-  .card { padding: 16px; }
-  .nutrient-grid { grid-template-columns: repeat(2, 1fr); }
-  #tab-main > div { grid-template-columns: 1fr !important; }
-}
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #272b29; border-radius: 3px; }
+/* 모바일 스크롤바 숨기기 */
+::-webkit-scrollbar { display: none; }
