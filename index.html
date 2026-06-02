@@ -10,7 +10,7 @@
 <body>
   <div class="container">
     <header>
-      <h1>❣️MY DIET</h1>
+      <h1>❣️My Diet</h1>
       <p class="subtitle" id="headerStatus"></p>
     </header>
 
@@ -28,7 +28,7 @@
         <div class="main-layout">
           <section class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-              <h2 style="margin:0">📅 캘린더</h2>
+              <h2 style="margin:0">📅 식단 캘린더</h2>
               <div style="display:flex;gap:8px;align-items:center">
                 <button class="btn-icon" onclick="changeCalendarMonth(-1)">←</button>
                 <span id="calendarMonth" style="font-size:14px;font-weight:600;min-width:90px;text-align:center"></span>
@@ -95,7 +95,7 @@
       <div id="tab-stats" class="tab-content">
         <section class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <h2 style="margin:0">📊 월간 통계 </h2>
+            <h2 style="margin:0">📊 월간 통계 분석</h2>
             <select id="monthSelector" class="input" style="width:auto;min-width:130px" onchange="changeMonth()">
               <option value="">월 선택</option>
             </select>
@@ -104,19 +104,19 @@
         </section>
 
         <section class="card">
-          <h2>📈 일일 칼로리</h2>
+          <h2>📈 체중 변동과 일일 칼로리 상관관계</h2>
           <div class="chart-container"><canvas id="calWeightChart"></canvas></div>
         </section>
 
         <section class="card">
-          <h2>🥗 영양소 균형</h2>
+          <h2>🥗 체중 변동과 영양소 균형 상관관계</h2>
           <div class="chart-container"><canvas id="nutrientWeightChart"></canvas></div>
         </section>
       </div>
 
       <div id="tab-analysis" class="tab-content">
         <section class="card">
-          <h2>🔬 몸무게 스파이크 음식</h2>
+          <h2>🔬 내 몸에 영향을 주는 음식 분석</h2>
           <div id="foodImpact"></div>
         </section>
         <section class="card">

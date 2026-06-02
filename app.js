@@ -1,6 +1,6 @@
 let data = JSON.parse(localStorage.getItem('dietAnalysis')) || {
   goals: { weight: 58, cal: 1600, carb: 180, protein: 100, fat: 45, sugar: 50, sodium: 2000 },
-  weights: [], meals: [], fastingDates: [], exercises: []
+  weights: [], meals: [], fastingDates: [], exercises: [], favoriteFoods: []
 };
 
 if (!data.goals.sugar) data.goals.sugar = 50;
@@ -134,15 +134,19 @@ function renderCalendar() {
 
     const classes = ['calendar-day', dateStr === today ? 'today' : '', dateStr === selectedDate ? 'selected' : '', dayMeals.length > 0 ? 'has-meal' : '', isOverCal ? 'over-cal' : ''].filter(Boolean).join(' ');
 
-    let mealPreview = `<div class="calendar-meal-name empty-meal">+</div>`;
+    let mealPreview = `<div class="empty-meal" style="font-size:11px;color:#3b423e;text-align:center;margin-top:4px;">·</div>`;
     if (dayMeals.length > 0) {
-      const firstMeal = dayMeals[0].name.length > 4 ? dayMeals[0].name.substring(0, 4) + '..' : dayMeals[0].name;
-      mealPreview = `<div class="calendar-meal-name">🍱 ${firstMeal}${dayMeals.length > 1 ? ` 외` : ''}</div><div class="calendar-day-cal ${isOverCal ? 'danger' : 'safe'}">${totalCal}</div>`;
+      // 식사 타입별 이모티콘
+      const typeEmojis = { '아침': '🌅', '점심': '☀️', '저녁': '🌙', '간식': '🍪' };
+      const mealTypes = [...new Set(dayMeals.map(m => m.type || '간식'))];
+      const mealIcons = mealTypes.map(t => typeEmojis[t] || '🍴').join('');
+      mealPreview = `<div style="font-size:13px;line-height:1.2;margin-bottom:2px;">${mealIcons}${hasExercise ? '🏃' : ''}</div><div class="calendar-day-cal ${isOverCal ? 'danger' : 'safe'}">${totalCal}kcal</div>`;
+    } else if (hasExercise) {
+      mealPreview = `<div style="font-size:13px;line-height:1.2;margin-bottom:2px;">🏃</div>`;
     }
 
     html += `<div class="${classes}" onclick="selectDate('${dateStr}')">
-      ${isFastingDay ? `<div class="calendar-fasting-badge">🌙</div>` : ''}
-      ${hasExercise ? `<div class="calendar-exercise-badge">🏃</div>` : ''}
+      ${isFastingDay ? `<div class="calendar-fasting-badge">🌙단식</div>` : ''}
       <div class="calendar-day-number">${day}</div>
       ${mealPreview}
     </div>`;
@@ -181,7 +185,14 @@ function renderSelectedDate() {
       fat: sum.fat + m.fat, sugar: sum.sugar + (m.sugar || 0), sodium: sum.sodium + m.sodium
     }), { cal: 0, carb: 0, protein: 0, fat: 0, sugar: 0, sodium: 0 });
 
-    const nutrients = [{ name: '칼로리', current: total.cal, goal: data.goals.cal, unit: 'kcal' }, { name: '탄수화물', current: total.carb, goal: data.goals.carb, unit: 'g' }, { name: '단백질', current: total.protein, goal: data.goals.protein, unit: 'g' }];
+    const nutrients = [
+      { name: '칼로리', current: total.cal, goal: data.goals.cal, unit: 'kcal' },
+      { name: '탄수화물', current: total.carb, goal: data.goals.carb, unit: 'g' },
+      { name: '단백질', current: total.protein, goal: data.goals.protein, unit: 'g' },
+      { name: '지방', current: total.fat, goal: data.goals.fat, unit: 'g' },
+      { name: '당', current: total.sugar, goal: data.goals.sugar, unit: 'g' },
+      { name: '나트륨', current: total.sodium, goal: data.goals.sodium, unit: 'mg' }
+    ];
 
     document.getElementById('selectedDateSummary').innerHTML = `<div class="nutrient-grid">${nutrients.map(n => {
       const pct = Math.round((n.current / n.goal) * 100); const isOver = n.current > n.goal;
@@ -191,7 +202,7 @@ function renderSelectedDate() {
 
   document.getElementById('mealList').innerHTML = dayMeals.map(m => {
     const typeLabel = m.type || '간식';
-    return `<div class="list-item"><div><div style="margin-bottom:4px;"><span class="meal-tag meal-tag-${typeLabel}">${typeLabel}</span> <strong>${m.name}</strong></div><div style="font-size:12px;color:#6b7870;">${m.cal}kcal · 탄${m.carb}g · 단${m.protein}g · 지${m.fat}g${m.sugar ? ` · 당${m.sugar}g` : ''} · 나트륨${m.sodium}mg</div></div><button onclick="deleteMeal(${m.id})" class="btn-small">×</button></div>`;
+    return `<div class="list-item"><div style="flex:1"><div style="margin-bottom:4px;"><span class="meal-tag meal-tag-${typeLabel}">${typeLabel}</span> <strong>${m.name}</strong></div><div style="font-size:12px;color:#6b7870;">${m.cal}kcal · 탄${m.carb}g · 단${m.protein}g · 지${m.fat}g${m.sugar ? ` · 당${m.sugar}g` : ''} · 나트륨${m.sodium}mg</div></div><div style="display:flex;gap:4px;"><button onclick="openEditMeal(${m.id})" class="btn-small" style="color:#64b5f6;font-size:14px !important;">✏️</button><button onclick="deleteMeal(${m.id})" class="btn-small">×</button></div></div>`;
   }).join('') || '';
 
   const dayExercises = data.exercises.filter(e => e.date === selectedDate);
@@ -396,15 +407,273 @@ function renderRiskyCombos() {
     </div>`).join('');
 }
 
+function openEditMeal(id) {
+  const meal = data.meals.find(m => m.id === id);
+  if (!meal) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'editMealModal';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-title">
+        <span>✏️ 식사 수정</span>
+        <button onclick="closeEditMeal()" class="btn-small" style="font-size:20px !important;">×</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <select id="editMealType" class="input" style="flex:0.35;min-width:80px;padding:10px;">
+          <option value="아침" ${meal.type==='아침'?'selected':''}>아침</option>
+          <option value="점심" ${meal.type==='점심'?'selected':''}>점심</option>
+          <option value="저녁" ${meal.type==='저녁'?'selected':''}>저녁</option>
+          <option value="간식" ${meal.type==='간식'?'selected':''}>간식</option>
+        </select>
+        <input type="text" id="editMealName" class="input" value="${meal.name}" placeholder="음식명" style="flex:1;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+        <input type="number" id="editMealCal" class="input" placeholder="칼로리" value="${meal.cal||''}">
+        <input type="number" id="editMealCarb" class="input" placeholder="탄수화물(g)" value="${meal.carb||''}">
+        <input type="number" id="editMealProtein" class="input" placeholder="단백질(g)" value="${meal.protein||''}">
+        <input type="number" id="editMealFat" class="input" placeholder="지방(g)" value="${meal.fat||''}">
+        <input type="number" id="editMealSugar" class="input" placeholder="당(g)" value="${meal.sugar||''}">
+        <input type="number" id="editMealSodium" class="input" placeholder="나트륨(mg)" value="${meal.sodium||''}">
+      </div>
+      <button onclick="saveEditMeal(${id})" class="btn" style="width:100%;">저장</button>
+    </div>`;
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeEditMeal(); });
+  document.body.appendChild(overlay);
+}
+
+function closeEditMeal() {
+  const modal = document.getElementById('editMealModal');
+  if (modal) modal.remove();
+}
+
+function saveEditMeal(id) {
+  const meal = data.meals.find(m => m.id === id);
+  if (!meal) return;
+  const name = document.getElementById('editMealName').value.trim();
+  if (!name) return alert('음식명을 입력하세요');
+  meal.type = document.getElementById('editMealType').value;
+  meal.name = name;
+  meal.cal = parseInt(document.getElementById('editMealCal').value) || 0;
+  meal.carb = parseInt(document.getElementById('editMealCarb').value) || 0;
+  meal.protein = parseInt(document.getElementById('editMealProtein').value) || 0;
+  meal.fat = parseInt(document.getElementById('editMealFat').value) || 0;
+  meal.sugar = parseInt(document.getElementById('editMealSugar').value) || 0;
+  meal.sodium = parseInt(document.getElementById('editMealSodium').value) || 0;
+  closeEditMeal();
+  save();
+}
+
+// 자동완성: 기존 음식 목록 가져오기
+function getUniqueFoods() {
+  const foodMap = new Map();
+  data.meals.forEach(m => {
+    if (!foodMap.has(m.name)) {
+      foodMap.set(m.name, { name: m.name, cal: m.cal, carb: m.carb, protein: m.protein, fat: m.fat, sugar: m.sugar, sodium: m.sodium });
+    }
+  });
+  return Array.from(foodMap.values());
+}
+
+// 자동완성 렌더
+function showMealAutocomplete(value) {
+  const container = document.getElementById('mealAutocomplete');
+  if (!container) return;
+  if (!value.trim()) { container.innerHTML = ''; return; }
+  
+  const uniqueFoods = getUniqueFoods();
+  const filtered = uniqueFoods.filter(f => f.name.toLowerCase().includes(value.toLowerCase())).slice(0, 5);
+  const favorites = data.favoriteFoods.filter(f => f.name.toLowerCase().includes(value.toLowerCase())).slice(0, 3);
+  
+  let html = '';
+  if (favorites.length > 0) {
+    html += '<div style="padding:4px 0;border-bottom:1px solid #272b29;"><div style="font-size:11px;color:#6b7870;padding:4px 8px;">⭐ 즐겨찾기</div>';
+    html += favorites.map(f => `<div class="autocomplete-item" onclick="selectAutocompleteMeal('${f.name.replace(/'/g, "\\'")}', ${f.cal}, ${f.carb}, ${f.protein}, ${f.fat}, ${f.sugar}, ${f.sodium})"><strong>${f.name}</strong><span style="font-size:11px;color:#6b7870;margin-left:8px;">${f.cal}kcal</span></div>`).join('');
+    html += '</div>';
+  }
+  if (filtered.length > 0) {
+    html += '<div style="padding:4px 0;"><div style="font-size:11px;color:#6b7870;padding:4px 8px;">최근 음식</div>';
+    html += filtered.map(f => `<div class="autocomplete-item" onclick="selectAutocompleteMeal('${f.name.replace(/'/g, "\\'")}', ${f.cal}, ${f.carb}, ${f.protein}, ${f.fat}, ${f.sugar}, ${f.sodium})"><strong>${f.name}</strong><span style="font-size:11px;color:#6b7870;margin-left:8px;">${f.cal}kcal</span></div>`).join('');
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
+function selectAutocompleteMeal(name, cal, carb, protein, fat, sugar, sodium) {
+  document.getElementById('mealName').value = name;
+  document.getElementById('mealCal').value = cal;
+  document.getElementById('mealCarb').value = carb;
+  document.getElementById('mealProtein').value = protein;
+  document.getElementById('mealFat').value = fat;
+  document.getElementById('mealSugar').value = sugar;
+  document.getElementById('mealSodium').value = sodium;
+  document.getElementById('mealAutocomplete').innerHTML = '';
+}
+
+// 즐겨찾기 토글
+function toggleFavoriteFood(name, cal, carb, protein, fat, sugar, sodium) {
+  const idx = data.favoriteFoods.findIndex(f => f.name === name);
+  if (idx >= 0) {
+    data.favoriteFoods.splice(idx, 1);
+  } else {
+    data.favoriteFoods.push({ name, cal, carb, protein, fat, sugar, sodium });
+  }
+  save();
+  renderFavoriteFoods();
+}
+
+function isFavoriteFood(name) {
+  return data.favoriteFoods.some(f => f.name === name);
+}
+
+function renderFavoriteFoods() {
+  const html = data.favoriteFoods.length === 0 
+    ? '<div class="empty" style="padding:16px;font-size:13px;">⭐ 자주 먹는 음식을 즐겨찾기에 추가하세요</div>'
+    : data.favoriteFoods.map(f => `
+      <div class="list-item" style="justify-content:space-between;">
+        <div style="flex:1;">
+          <div style="font-weight:600;margin-bottom:2px;">${f.name}</div>
+          <div style="font-size:11px;color:#6b7870;">${f.cal}kcal · 탄${f.carb}g · 단${f.protein}g</div>
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button onclick="selectAutocompleteMeal('${f.name.replace(/'/g, "\\'")}', ${f.cal}, ${f.carb}, ${f.protein}, ${f.fat}, ${f.sugar}, ${f.sodium})" class="btn-small" style="color:#64b5f6;padding:4px 8px;font-size:13px !important;">추가</button>
+          <button onclick="toggleFavoriteFood('${f.name.replace(/'/g, "\\'")}', ${f.cal}, ${f.carb}, ${f.protein}, ${f.fat}, ${f.sugar}, ${f.sodium})" class="btn-small" style="color:#ff6b6b;">✕</button>
+        </div>
+      </div>`).join('');
+  const container = document.getElementById('favoriteFoodsContainer');
+  if (container) container.innerHTML = html;
+}
+
+// 효율적 식품 점수 계산 (단백질 높고 칼로리 낮은 음식)
+function calculateFoodEfficiency(cal, protein, carb) {
+  if (cal === 0) return 0;
+  return Math.round(((protein * 4 + carb * 2) / cal) * 100) / 100;
+}
+
+// 효율적 식품 추천
+function renderEfficientFoods() {
+  const uniqueFoods = getUniqueFoods();
+  const withScore = uniqueFoods
+    .filter(f => f.cal > 0)
+    .map(f => ({ ...f, score: calculateFoodEfficiency(f.cal, f.protein, f.carb) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10);
+
+  const html = withScore.length === 0
+    ? '<div class="empty">분석할 음식 데이터가 부족합니다</div>'
+    : withScore.map((f, i) => `
+      <div class="list-item" style="flex-direction:column;align-items:flex-start;gap:8px;">
+        <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-weight:700;color:#7dff8f;font-size:18px;">${i + 1}</span>
+            <div>
+              <div style="font-weight:600;">${f.name}</div>
+              <div style="font-size:11px;color:#6b7870;">${f.cal}kcal · 단백질${f.protein}g</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:700;color:#64b5f6;">효율도</div>
+            <div style="font-size:14px;color:#64b5f6;font-weight:700;">${f.score}</div>
+          </div>
+        </div>
+        <button onclick="toggleFavoriteFood('${f.name.replace(/'/g, "\\'")}', ${f.cal}, ${f.carb}, ${f.protein}, ${f.fat}, ${f.sugar}, ${f.sodium})" class="btn" style="width:100%;${isFavoriteFood(f.name) ? 'background:#c084fc;color:#0d0f0e;' : ''}">${isFavoriteFood(f.name) ? '⭐ 즐겨찾기 해제' : '⭐ 즐겨찾기'}</button>
+      </div>`).join('');
+  
+  const container = document.getElementById('efficientFoodsContainer');
+  if (container) container.innerHTML = html;
+}
+
+// 주간 리포트
+function renderWeeklyReport() {
+  const today = new Date();
+  const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const weekStart = weekAgo.toISOString().split('T')[0];
+  const weekEnd = today.toISOString().split('T')[0];
+
+  const weekMeals = data.meals.filter(m => m.date >= weekStart && m.date <= weekEnd);
+  const weekWeights = data.weights.filter(w => w.date >= weekStart && w.date <= weekEnd);
+
+  if (weekMeals.length === 0) {
+    document.getElementById('weeklyReportContainer').innerHTML = '<div class="empty">지난 7일 데이터가 부족합니다</div>';
+    return;
+  }
+
+  // 음식별 효율도 계산
+  const foodStats = {};
+  weekMeals.forEach(m => {
+    if (!foodStats[m.name]) {
+      foodStats[m.name] = { name: m.name, cal: m.cal, protein: m.protein, carb: m.carb, fat: m.fat, count: 0, totalCal: 0 };
+    }
+    foodStats[m.name].count += 1;
+    foodStats[m.name].totalCal += m.cal;
+  });
+
+  const foodArray = Object.values(foodStats)
+    .map(f => ({ ...f, score: calculateFoodEfficiency(f.cal, f.protein, f.carb) }));
+  
+  const bestFoods = foodArray.sort((a, b) => b.score - a.score).slice(0, 3);
+  const worstFoods = foodArray.sort((a, b) => a.score - b.score).slice(0, 3);
+
+  // 주간 통계
+  const totalCal = weekMeals.reduce((sum, m) => sum + m.cal, 0);
+  const avgCal = Math.round(totalCal / 7);
+  const totalDays = new Set(weekMeals.map(m => m.date)).size;
+  const calorieAchievement = Math.round((avgCal / data.goals.cal) * 100);
+
+  let html = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div class="stat-box">
+        <div class="stat-label">일일 평균 칼로리</div>
+        <div class="stat-value" style="color:${avgCal > data.goals.cal ? '#ff6b6b' : '#7dff8f'}">${avgCal}</div>
+        <div style="font-size:11px;color:#6b7870;margin-top:4px;">목표: ${data.goals.cal}kcal</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">기록 일수</div>
+        <div class="stat-value">${totalDays}</div>
+        <div style="font-size:11px;color:#6b7870;margin-top:4px;">지난 7일</div>
+      </div>
+    </div>
+
+    <h3 style="margin:16px 0 12px 0;font-size:14px;">🌟 최고의 선택 음식</h3>
+    ${bestFoods.map((f, i) => `
+      <div class="list-item" style="border-color:rgba(125,255,143,0.3);background:rgba(125,255,143,0.05);">
+        <div>
+          <strong>${f.name}</strong>
+          <div style="font-size:11px;color:#6b7870;">${f.cal}kcal · 효율도 ${f.score} · ${f.count}회</div>
+        </div>
+      </div>`).join('')}
+
+    <h3 style="margin:16px 0 12px 0;font-size:14px;">⚠️ 피해야 할 음식</h3>
+    ${worstFoods.map((f, i) => `
+      <div class="list-item" style="border-color:rgba(255,107,107,0.3);background:rgba(255,107,107,0.05);">
+        <div>
+          <strong>${f.name}</strong>
+          <div style="font-size:11px;color:#6b7870;">${f.cal}kcal · 효율도 ${f.score} · ${f.count}회</div>
+        </div>
+      </div>`).join('')}
+
+    <h3 style="margin:16px 0 12px 0;font-size:14px;">📊 체중 변화</h3>
+    ${weekWeights.length >= 2 
+      ? (() => {
+        const sorted = [...weekWeights].sort((a, b) => a.date.localeCompare(b.date));
+        const change = Math.round((sorted[sorted.length - 1].weight - sorted[0].weight) * 10) / 10;
+        return `<div class="stat-box" style="width:100%;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="stat-label">지난 7일 체중 변화</div><div class="stat-value" style="color:${change > 0 ? '#ff6b6b' : '#7dff8f'}">${change > 0 ? '+' : ''}${change}kg</div></div></div></div>`;
+      })()
+      : '<div style="background:#1a1d1b;padding:12px;border-radius:8px;font-size:12px;color:#6b7870;">체중 기록이 2개 이상 필요합니다</div>'}
+  `;
+
+  document.getElementById('weeklyReportContainer').innerHTML = html;
+}
+
 function render() {
-  renderCalendar(); renderSelectedDate(); renderInsights();
+  renderCalendar(); renderSelectedDate(); renderInsights(); renderFavoriteFoods();
   const latestWeight = data.weights[0];
   if (latestWeight) {
     const toGo = Math.round((latestWeight.weight - data.goals.weight) * 10) / 10;
     document.getElementById('headerStatus').textContent = `현재 ${latestWeight.weight}kg · 목표까지 ${Math.abs(toGo)}kg`;
   } else document.getElementById('headerStatus').textContent = '다이어트를 시작해보세요!';
   
-  renderMonthStats(); renderFoodImpact();
+  renderMonthStats();
   document.getElementById('goalWeight').value = data.goals.weight; document.getElementById('goalCal').value = data.goals.cal;
   document.getElementById('goalCarb').value = data.goals.carb; document.getElementById('goalProtein').value = data.goals.protein;
   document.getElementById('goalFat').value = data.goals.fat; document.getElementById('goalSugar').value = data.goals.sugar;
@@ -417,10 +686,11 @@ function switchTab(tabName, element) {
   document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
   document.getElementById(`tab-${tabName}`).classList.add('active');
 
-  if (tabName === 'main') { renderCalendar(); renderSelectedDate(); renderInsights(); }
+  if (tabName === 'main') { renderCalendar(); renderSelectedDate(); renderInsights(); renderFavoriteFoods(); }
   if (tabName === 'stats') { populateMonthSelector(); setTimeout(() => { renderMonthStats(); renderMonthCharts(); }, 100); }
-  if (tabName === 'analysis') { renderFrequentFoods(); renderRiskyCombos(); }
+  if (tabName === 'efficient') { renderEfficientFoods(); renderFoodImpact(); renderFrequentFoods(); renderRiskyCombos(); }
+  if (tabName === 'weekly') { renderWeeklyReport(); }
 }
 
-window.addExercise = addExercise; window.deleteExercise = deleteExercise; window.toggleFasting = toggleFasting; window.saveSelectedWeight = saveSelectedWeight; window.addMeal = addMeal; window.deleteMeal = deleteMeal; window.saveGoals = saveGoals; window.clearData = clearData; window.clearCurrentMonthData = clearCurrentMonthData; window.switchTab = switchTab; window.changeMonth = changeMonth; window.changeCalendarMonth = changeCalendarMonth; window.goToToday = goToToday; window.selectDate = selectDate;
+window.addExercise = addExercise; window.deleteExercise = deleteExercise; window.toggleFasting = toggleFasting; window.saveSelectedWeight = saveSelectedWeight; window.addMeal = addMeal; window.deleteMeal = deleteMeal; window.saveGoals = saveGoals; window.clearData = clearData; window.clearCurrentMonthData = clearCurrentMonthData; window.switchTab = switchTab; window.changeMonth = changeMonth; window.changeCalendarMonth = changeCalendarMonth; window.goToToday = goToToday; window.selectDate = selectDate; window.openEditMeal = openEditMeal; window.closeEditMeal = closeEditMeal; window.saveEditMeal = saveEditMeal; window.showMealAutocomplete = showMealAutocomplete; window.selectAutocompleteMeal = selectAutocompleteMeal; window.toggleFavoriteFood = toggleFavoriteFood;
 render();
